@@ -1,18 +1,20 @@
 import os
+
 from dotenv import load_dotenv
 from langchain_community.document_loaders import TextLoader
-from langchain_text_splitters import CharacterTextSplitter
 from langchain_ollama import OllamaEmbeddings
 from langchain_pinecone import PineconeVectorStore
+from langchain_text_splitters import CharacterTextSplitter
 
 load_dotenv()
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     print("Ingesting...")
     # 读取文档
-    loader = TextLoader("E:/dragon/Udemy-business/langchain_demo/mediumblog1.txt",encoding="utf-8")
+    loader = TextLoader(
+        "E:/dragon/Udemy-business/langchain_demo/mediumblog1.txt", encoding="utf-8"
+    )
     document = loader.load()
-
 
     # 进行文档分块
     print("splitting...")
