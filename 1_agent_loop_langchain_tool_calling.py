@@ -1,17 +1,20 @@
 from dotenv import load_dotenv
+
 load_dotenv()
 
-from langchain.chat_models import init_chat_model
-from langchain.tools import tool
-from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
-from langsmith import traceable
 import os
+
+from langchain.chat_models import init_chat_model
+from langchain.messages import HumanMessage, SystemMessage, ToolMessage
+from langchain.tools import tool
+from langsmith import traceable
 
 MAX_ITERATIONS = 10
 MODEL = "qwen/qwen3-1.7b"
 # MODEL = "qwen/qwen3.5-9b"
 
 # --- Tools(Langchain @tool decorator) ---
+
 
 @tool
 def get_product_price(product: str) -> float:
@@ -20,12 +23,15 @@ def get_product_price(product: str) -> float:
     prices = {"laptop": 1299.99, "headphones": 145.95, "keyboard": 89.50}
     return prices.get(product, 0)
 
+
 @tool
 def apply_discount(price: float, discount_tier: str) -> float:
     """Apply a discount tier to a price and return the final price.
     Available tiers: bronze, silver, gold."""
-    print(f"   >> Executing apply_discount(price='{price}', discount_tier='{discount_tier}')")
-    discount_percentage = {"bronze": 5, "sliver": 12,  "gold": 23}
+    print(
+        f"   >> Executing apply_discount(price='{price}', discount_tier='{discount_tier}')"
+    )
+    discount_percentage = {"bronze": 5, "sliver": 12, "gold": 23}
     discount = discount_percentage.get(discount_tier, 0)
     return round(price * (1 - discount / 100), 2)
 
@@ -37,10 +43,11 @@ def run_agent(question: str):
     tools_dict = {t.name: t for t in tools}
 
     llm = init_chat_model(
-        f"openai:{MODEL}", 
+        f"openai:{MODEL}",
         api_key=os.environ.get("LM_STUDIO_API_KEY"),
         base_url=os.environ.get("LM_STUDIO_BASE_URL"),
-        temperature=0)
+        temperature=0,
+    )
     llm_with_tools = llm.bind_tools(tools)
 
     messages = [
@@ -61,7 +68,7 @@ def run_agent(question: str):
                 "ask them which tier to use - do NOT assume one."
             )
         ),
-        HumanMessage(content=question)
+        HumanMessage(content=question),
     ]
 
     for iteration in range(1, MAX_ITERATIONS + 1):
@@ -87,18 +94,17 @@ def run_agent(question: str):
 
         if tool_to_use is None:
             raise ValueError(f"Tool '{tool_name}' not found")
-        
+
         observation = tool_to_use.invoke(tool_args)
         print(f"  [Tool Result] {observation}")
 
         # 将当前迭代的AI消息和tool消息，追加到消息列表中
         messages.append(ai_message)
-        messages.append(
-            ToolMessage(content=observation, tool_call_id=tool_call_id)
-        )
+        messages.append(ToolMessage(content=observation, tool_call_id=tool_call_id))
 
     print(f"ERROR: Max iterations reached without a final answer")
     return None
+
 
 if __name__ == "__main__":
     print("Hello Lanchain Agent (.bind_tools)")

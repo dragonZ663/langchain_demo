@@ -1,7 +1,9 @@
 # CHANGE 1: Add re + inspect — we'll parse tool calls from raw text instead of structured JSON.
-import re
 import inspect
+import re
+
 from dotenv import load_dotenv
+
 load_dotenv()
 
 import ollama
@@ -13,6 +15,7 @@ MODEL = "qwen3.5:2b"
 
 # --- Tools(Langchain @tool decorator) ---
 
+
 @traceable(run_type="tool")
 def get_product_price(product: str) -> float:
     """Look up the price of a product in the catelog."""
@@ -20,20 +23,25 @@ def get_product_price(product: str) -> float:
     prices = {"laptop": 1299.99, "headphones": 145.95, "keyboard": 89.50}
     return prices.get(product, 0)
 
+
 @traceable(run_type="tool")
 def apply_discount(price: float, discount_tier: str) -> float:
     """Apply a discount tier to a price and return the final price.
     Available tiers: bronze, silver, gold."""
-    print(f"   >> Executing apply_discount(price='{price}', discount_tier='{discount_tier}')")
+    print(
+        f"   >> Executing apply_discount(price='{price}', discount_tier='{discount_tier}')"
+    )
     price = float(price)
-    discount_percentage = {"bronze": 5, "sliver": 12,  "gold": 23}
+    discount_percentage = {"bronze": 5, "sliver": 12, "gold": 23}
     discount = discount_percentage.get(discount_tier, 0)
     return round(price * (1 - discount / 100), 2)
+
 
 tools = {
     "get_product_price": get_product_price,
     "apply_discount": apply_discount,
 }
+
 
 # CHANGE 3: Delete the JSON schemas. Tools now live inside the prompt as plain text.
 # We derive descriptions from the functions themselves using inspect.
@@ -46,6 +54,7 @@ def get_tools_descriptions(tools_dict):
         docsting = inspect.getdoc(tool_function) or ""
         descriptions.append(f"{tool_name}{signature} - {docsting}")
     return "\n".join(descriptions)
+
 
 tool_descriptions = get_tools_descriptions(tools)
 tool_names = ",".join(tools.keys())
@@ -84,6 +93,7 @@ Thought:"""
 def ollama_chat_traced(model, messages, options):
     return ollama.chat(model=model, messages=messages, options=options)
 
+
 # --- Agent Loop ---
 @traceable(name="Ollama Agent Loop")
 def run_agent(question: str):
@@ -92,8 +102,7 @@ def run_agent(question: str):
 
     # CHANGE 5: One prompt string replaces the system/user message split.
     prompt = react_prompt.format(question=question)
-    scratchpad = "" 
-    
+    scratchpad = ""
 
     for iteration in range(1, MAX_ITERATIONS + 1):
         print(f"\n--- Iteration {iteration} ---")
@@ -104,9 +113,9 @@ def run_agent(question: str):
         response = ollama_chat_traced(
             model=MODEL,
             messages=[{"role": "user", "content": full_prompt}],
-            options={"stop": ["\nObservation"], "temperature": 0}
+            options={"stop": ["\nObservation"], "temperature": 0},
         )
-        
+
         output = response.message.content
         print(f"LLM Output:\n{output}")
 
@@ -126,10 +135,11 @@ def run_agent(question: str):
         action_input_match = re.search(r"Action Input:\s*(.+)", output)
 
         if not action_match or not action_input_match:
-            print("  [Parsing] ERROR: Could not parse Action/Action Input from LLM output")
+            print(
+                "  [Parsing] ERROR: Could not parse Action/Action Input from LLM output"
+            )
             break
-        
-        
+
         tool_name = action_match.group(1).strip()
         tool_input_raw = action_input_match.group(1).strip()
 
@@ -150,12 +160,12 @@ def run_agent(question: str):
 
         print(f"  [Tool Result] {observation}")
 
-        
         # CHANGE 7: History is one growing string re-sent every iteration (replaces messages.append).
         scratchpad += f"{output}\nObservation: {observation}\nThought:"
 
     print(f"ERROR: Max iterations reached without a final answer")
     return None
+
 
 if __name__ == "__main__":
     print("Hello Lanchain Agent (.bind_tools)")

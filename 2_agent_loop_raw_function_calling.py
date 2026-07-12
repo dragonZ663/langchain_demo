@@ -1,15 +1,18 @@
 from dotenv import load_dotenv
+
 load_dotenv()
+
+import os
 
 import ollama
 from langsmith import traceable
-import os
 
 MAX_ITERATIONS = 10
 MODEL = "gpt-oss:20b"
 
 
 # --- Tools(Langchain @tool decorator) ---
+
 
 @traceable(run_type="tool")
 def get_product_price(product: str) -> float:
@@ -18,14 +21,18 @@ def get_product_price(product: str) -> float:
     prices = {"laptop": 1299.99, "headphones": 145.95, "keyboard": 89.50}
     return prices.get(product, 0)
 
+
 @traceable(run_type="tool")
 def apply_discount(price: float, discount_tier: str) -> float:
     """Apply a discount tier to a price and return the final price.
     Available tiers: bronze, silver, gold."""
-    print(f"   >> Executing apply_discount(price='{price}', discount_tier='{discount_tier}')")
-    discount_percentage = {"bronze": 5, "sliver": 12,  "gold": 23}
+    print(
+        f"   >> Executing apply_discount(price='{price}', discount_tier='{discount_tier}')"
+    )
+    discount_percentage = {"bronze": 5, "sliver": 12, "gold": 23}
     discount = discount_percentage.get(discount_tier, 0)
     return round(price * (1 - discount / 100), 2)
+
 
 # Difference 2: Without @tool, we must MANUALLY define the JSON schema for each function.
 # This is exactly what LangChain's @tool decorator generates automatically
@@ -84,18 +91,20 @@ tools_for_llm = [
 #       """
 # We keep the manual JSON version here so you can see what @tool hides from you.
 
+
 # --- Helper: traced Ollama call ---
 # Difference 3: Without LangChain, we must manually trace LLM calls for LangSmith.
 @traceable(name="Ollama Chat", run_type="llm")
 def ollama_chat_traced(messages):
     return ollama.chat(model=MODEL, tools=tools_for_llm, messages=messages)
 
+
 # --- Agent Loop ---
 @traceable(name="Ollama Agent Loop")
 def run_agent(question: str):
     tools_dict = {
         "get_product_price": get_product_price,
-        "apply_discount": apply_discount
+        "apply_discount": apply_discount,
     }
 
     print(f"Question: {question}")
@@ -118,9 +127,9 @@ def run_agent(question: str):
                 "Always use the apply_discount tool. \n"
                 "4. If the user does not specify a discount tier, "
                 "ask them which tier to use - do NOT assume one."
-            )
+            ),
         },
-        {"role": "user", "content": question }
+        {"role": "user", "content": question},
     ]
 
     for iteration in range(1, MAX_ITERATIONS + 1):
@@ -139,7 +148,7 @@ def run_agent(question: str):
 
         # Only process the FIRST tool call -  force one tool per iteration
         tool_call = tool_calls[0]
-         # Difference 6: Attribute access (.function.name) instead of dict access (.get("name"))
+        # Difference 6: Attribute access (.function.name) instead of dict access (.get("name"))
         tool_name = tool_call.function.name
         tool_args = tool_call.function.arguments
 
@@ -148,22 +157,18 @@ def run_agent(question: str):
 
         if tool_to_use is None:
             raise ValueError(f"Tool '{tool_name}' not found")
-        
+
         # Difference 7: Direct function call instead of tool.invoke()
         observation = tool_to_use(**tool_args)
         print(f"  [Tool Result] {observation}")
 
         # 将当前迭代的AI消息和tool消息，追加到消息列表中
         messages.append(ai_message)
-        messages.append(
-            {
-                "role": "tool",
-                "content": str(observation)
-            }
-        )
+        messages.append({"role": "tool", "content": str(observation)})
 
     print(f"ERROR: Max iterations reached without a final answer")
     return None
+
 
 if __name__ == "__main__":
     print("Hello Lanchain Agent (.bind_tools)")
