@@ -1,3 +1,8 @@
+""" level 1 实现 Agent Loop
+1、通过 langchain的 init_chat_model, 生成LLM实例
+2、通过 langchain.tools模块的tool装饰器, 快速定义大模型的可用工具
+3、通过 Tool.invoke 统一调用方法
+"""
 import os
 
 from dotenv import load_dotenv
@@ -17,7 +22,7 @@ MAX_ITERATIONS = 10
 @tool
 def get_cur_weather(city: str) -> str:
     """获取指定城市的当前天气数据
-    Args
+    Args:
         city: 城市名称
     """
     return f"{city} 当前的天气为：多云转晴，气温 26度"
@@ -26,7 +31,7 @@ def get_cur_weather(city: str) -> str:
 @tool
 def get_product_price(product: Literal["平板", "手机", "耳机"]) -> float | None:
     """获取产品价格，如果查询的product不在产品目录中，则返回None
-    Args
+    Args:
         product: 产品名称
     """
     prices = {"平板": 1299.99, "手机": 1899.99, "耳机": 299.99}
@@ -36,10 +41,10 @@ def get_product_price(product: Literal["平板", "手机", "耳机"]) -> float |
 @tool
 def cal_discount(level: Literal["gold", "sliver", "bronze"], price: float) -> float:
     """根据折扣等级level 和 原价 price，计算折扣后的价格
-    Args
+    Args:
         level: 折扣等级，取值范围 Literal["gold", "sliver", "bronze"]
         price: 产品原价
-    Return
+    Returns:
         折扣后的价格
     """
     discounts = {"gold": 0.8, "sliver": 0.9, "bronze": 0.95}

@@ -10,7 +10,7 @@ import ollama
 from langsmith import traceable
 
 MAX_ITERATIONS = 10
-MODEL = "qwen3.5:2b"
+MODEL = "qwen3.5:9b"
 
 
 # --- Tools(Langchain @tool decorator) ---
@@ -120,7 +120,7 @@ def run_agent(question: str):
         print(f"LLM Output:\n{output}")
 
         print(f"  [Parsing] Looking for Final Answer in LLM output...")
-        final_answer_match = re.search(r"Final Answer:\s*(.+)", output)
+        final_answer_match = re.search(r"Final Answer:\s*(.+)", output or "")
         if final_answer_match:
             final_answer = final_answer_match.group(1).strip()
             print(f"  [Parsed] Final Answer: {final_answer}")
@@ -131,8 +131,8 @@ def run_agent(question: str):
         # CHANGE 6: Parse tool calls from raw text with regex — fragile if LLM doesn't follow format.
         print(f"  [Parsing] Looking for Action and Action Input in LLM output...")
 
-        action_match = re.search(r"Action:\s*(.+)", output)
-        action_input_match = re.search(r"Action Input:\s*(.+)", output)
+        action_match = re.search(r"Action:\s*(.+)", output or "")
+        action_input_match = re.search(r"Action Input:\s*(.+)", output or "")
 
         if not action_match or not action_input_match:
             print(

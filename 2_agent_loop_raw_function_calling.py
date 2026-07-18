@@ -63,7 +63,10 @@ tools_for_llm = [
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "price": {"type": "number", "description": "The original price"},
+                    "price": {
+                        "type": "number", 
+                        "description": "The original price"
+                    },
                     "discount_tier": {
                         "type": "string",
                         "description": "The discount tier: 'bronze', 'silver', or 'gold'",
@@ -163,7 +166,8 @@ def run_agent(question: str):
         print(f"  [Tool Result] {observation}")
 
         # 将当前迭代的AI消息和tool消息，追加到消息列表中
-        messages.append(ai_message)
+        # Convert Message object to dict for the messages list
+        messages.append(ai_message.model_dump())
         messages.append({"role": "tool", "content": str(observation)})
 
     print(f"ERROR: Max iterations reached without a final answer")
